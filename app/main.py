@@ -92,7 +92,7 @@ async def health_check():
         "status": "healthy",
         "scheduler_running": scheduler_service.scheduler.running,
         "scheduled_jobs": len(scheduler_service.get_scheduler_jobs()),
-        "ai_available": ai_service.get_status()["ollama_running"]
+        "ai_available": ai_service.get_status()["available"]
     }
 
 if __name__ == "__main__":
