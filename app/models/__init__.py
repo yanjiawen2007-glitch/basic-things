@@ -9,6 +9,11 @@ from datetime import datetime
 
 Base = declarative_base()
 
+# 延迟初始化变量
+engine = None
+SessionLocal = None
+
+
 class Task(Base):
     __tablename__ = "tasks"
     
@@ -39,6 +44,7 @@ class Task(Base):
     success_count = Column(Integer, default=0)
     failure_count = Column(Integer, default=0)
 
+
 class TaskLog(Base):
     __tablename__ = "task_logs"
     
@@ -59,6 +65,7 @@ class TaskLog(Base):
     
     # Trigger info
     trigger_type = Column(String(20), default="scheduled")  # scheduled, manual, api
+
 
 class Message(Base):
     __tablename__ = "messages"
@@ -93,24 +100,42 @@ class Message(Base):
     received_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# Database setup
-def init_db(db_path="./data/scheduler.db"):
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=engine)
-    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Initialize SessionLocal
-SessionLocal = init_db()
+def init_db(db_path="./data/scheduler.db"):
+    """初始化数据库，应在应用启动时调用"""
+    global engine, SessionLocal
+    
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    engine = create_engine(
+        f"sqlite:///{db_path}", 
+        connect_args={"check_same_thread": False}
+    )
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    
+    return engine, SessionLocal
+
 
 def get_db():
+    """获取数据库会话，用于依赖注入"""
+    if SessionLocal is None:
+        raise RuntimeError("Database not initialized. Call init_db() first.")
+    
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
-# 修复的问题包括：
-# 1. 将函数调用放在了正确的位置
-# 2. 修复了缩进错误
-# 3. 确保了所有代码都处于正确的语法结构中
+
+# 公开接口
+__all__ = [
+    'Base', 
+    'Task', 
+    'TaskLog', 
+    'Message', 
+    'init_db', 
+    'get_db',
+    'engine',
+    'SessionLocal'
+]
