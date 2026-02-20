@@ -11,19 +11,15 @@ from email.header import decode_header
 import requests
 from datetime import datetime
 
-# Email configuration from environment variables
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'imap.exmail.qq.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '993'))
-EMAIL_USER = os.getenv('EMAIL_USER', 'hr@weilan.com')
-EMAIL_PASS = os.getenv('EMAIL_PASS', '')
-TASKFLOW_API = os.getenv('TASKFLOW_API', 'http://localhost:8000/api')
+# Email configuration
+EMAIL_HOST = 'imap.exmail.qq.com'
+EMAIL_PORT = 993
+EMAIL_USER = 'hr@weilan.com'
+EMAIL_PASS = '9wpCjNNcMvj845Fv'
+TASKFLOW_API = 'http://localhost:8000/api'
 
 def check_emails():
     """Check inbox for new emails and create tasks"""
-    if not EMAIL_PASS:
-        print("Error: EMAIL_PASS not set")
-        return 1
-    
     try:
         # Connect to IMAP server
         mail = imaplib.IMAP4_SSL(EMAIL_HOST, EMAIL_PORT)
