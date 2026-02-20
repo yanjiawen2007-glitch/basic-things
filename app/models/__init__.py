@@ -1,6 +1,3 @@
-好的，这是干净的 Python 代码，直接复制替换 `app\models\__init__.py` 的全部内容：
-
-```python
 """ Database models for Task Scheduler """
 
 import os
@@ -109,16 +106,3 @@ __all__ = [
     'init_db',
     'get_db',
 ]
-```
-
----
-
-## 操作步骤
-
-1. 打开 `C:\Agent Go\basic-things-main\app\models\__init__.py`
-2. **删除所有内容**
-3. **粘贴上面的代码**
-4. 保存文件
-5. 重新运行 `python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`
-
-应该就能正常启动了！ 🚀
