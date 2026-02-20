@@ -67,7 +67,8 @@ def init_db(db_path="./data/scheduler.db"):
     Base.metadata.create_all(bind=engine)
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-SessionLocal = None
+# Initialize SessionLocal
+SessionLocal = init_db()
 
 def get_db():
     db = SessionLocal()
