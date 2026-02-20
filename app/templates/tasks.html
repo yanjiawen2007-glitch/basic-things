@@ -1,28 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}任务管理 - TaskFlow{% endblock %}
-{% block page_title %}任务管理{% endblock %}
+{% block title %}Task Processing - TaskFlow{% endblock %}
+{% block page_title %}Task Processing{% endblock %}
 
 {% block content %}
-<div class="space-y-6" x-data="tasksData()" x-init="init()">
+<div class="space-y-6" x-data="taskProcessingData()" x-init="init()">
     
     <!-- Action Bar -->
     <div class="flex justify-between items-center">
         <div class="flex space-x-3">
-            <button @click="showCreateModal = true" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+            <button @click="showExtractModal = true" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span>AI Extract Tasks</span>
+            </button>
+            <button @click="showCreateModal = true" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                <span>新建任务</span>
+                <span>Create Task</span>
             </button>
         </div>
         
         <div class="flex space-x-2">
             <select x-model="filterStatus" @change="fetchTasks()" class="border border-gray-300 rounded-lg px-3 py-2">
-                <option value="">全部状态</option>
-                <option value="enabled">已启用</option>
-                <option value="disabled">已禁用</option>
+                <option value="">All Status</option>
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
             </select>
             
-            <input x-model="searchQuery" @input="filterTasks()" type="text" placeholder="搜索任务..." class="border border-gray-300 rounded-lg px-3 py-2">
+            <input x-model="searchQuery" @input="filterTasks()" type="text" placeholder="Search tasks..." class="border border-gray-300 rounded-lg px-3 py-2">
         </div>
     </div>
     
@@ -31,20 +35,20 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">任务名称</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">调度</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后执行</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Run</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 <template x-for="task in filteredTasks" :key="task.id">
                     <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="px-6 py-4">
                             <div class="text-sm font-medium text-gray-900" x-text="task.name"></div>
-                            <div class="text-sm text-gray-500" x-text="task.description"></div>
+                            <div class="text-sm text-gray-500" x-text="task.description?.substring(0, 100) + '...'"></div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 py-1 text-xs font-medium rounded-full"
@@ -65,326 +69,186 @@
                                       'bg-yellow-100 text-yellow-800': task.is_running,
                                       'bg-gray-100 text-gray-800': !task.is_enabled
                                   }"
-                                  x-text="task.is_running ? '运行中' : (task.is_enabled ? '启用' : '禁用')">
+                                  x-text="task.is_running ? 'Running' : (task.is_enabled ? 'Enabled' : 'Disabled')">
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(task.last_run_at)"></td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button @click="runTask(task.id)" class="text-indigo-600 hover:text-indigo-900 mr-3">运行</button>
-                            <button @click="editTask(task)" class="text-blue-600 hover:text-blue-900 mr-3">编辑</button>
-                            <button @click="deleteTask(task.id)" class="text-red-600 hover:text-red-900">删除</button>
+                            <button @click="runTask(task.id)" class="text-indigo-600 hover:text-indigo-900 mr-3">Run</button>
+                            <button @click="editTask(task)" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                            <button @click="deleteTask(task.id)" class="text-red-600 hover:text-red-900">Delete</button>
                         </td>
                     </tr>
                 </template>
+                
+                <tr x-show="filteredTasks.length === 0">
+                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                        No tasks found. Use "AI Extract Tasks" to extract from messages or "Create Task" to add manually.
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
     
-    <!-- Create Task Modal - Natural Language Input -->
-    <div x-show="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" x-cloak>
-        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4" @click.away="closeModal()">
+    <!-- AI Extract Tasks Modal -->
+    <div x-show="showExtractModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" x-cloak>
+        <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" @click.away="closeExtractModal()">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-semibold">新建任务</h3>
-                <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <h3 class="text-lg font-semibold">AI Extract Tasks from Messages</h3>
+                <button @click="closeExtractModal()" class="text-gray-400 hover:text-gray-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
             
             <div class="p-6 space-y-4">
-                <!-- Natural Language Input -->
+                <!-- Unprocessed Messages List -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">描述你的任务</label>
-                    <div class="relative">
-                        <textarea x-model="naturalLanguageInput" 
-                                  @keydown.enter.prevent="parseTask()"
-                                  placeholder="例如：每天早上9点检查 https://example.com 网站状态，如果打不开就发送邮件通知" 
-                                  class="w-full border border-gray-300 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                  rows="4"></textarea>
+                    <h4 class="font-medium text-gray-900 mb-3">Select Messages to Process</h4>
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
+                        <template x-for="msg in unprocessedMessages" :key="msg.id">
+                            <div class="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                                 @click="toggleMessageSelection(msg.id)"
+                                 :class="selectedMessages.includes(msg.id) ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'">
+                                <input type="checkbox" :checked="selectedMessages.includes(msg.id)" class="mt-1 h-4 w-4 text-indigo-600">
+                                <div class="flex-1">
+                                    <div class="font-medium text-sm" x-text="msg.subject"></div>
+                                    <div class="text-xs text-gray-500" x-text="msg.organization + ' - ' + msg.contact_person"></div>
+                                </div>
+                            </div>
+                        </template>
                         
-                        <!-- Voice Input Button -->
-                        <button @click="toggleVoiceInput()" 
-                                :class="isRecording ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                                class="absolute bottom-3 right-3 p-2 rounded-lg transition-colors"
-                                title="语音输入">
-                            <svg x-show="!isRecording" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-                            </svg>
-                            <svg x-show="isRecording" class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
-                            </svg>
+                        <div x-show="unprocessedMessages.length === 0" class="text-center text-gray-500 py-4">
+                            No unprocessed messages. <a href="/messages" class="text-indigo-600 hover:underline">Import messages first</a>.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Extract Button -->
+                <div class="flex justify-center">
+                    <button @click="extractTasks()" 
+                            :disabled="selectedMessages.length === 0 || isExtracting"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+                        <svg x-show="isExtracting" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span x-text="isExtracting ? 'Extracting...' : 'Extract Tasks with AI'"></span>
+                    </button>
+                </div>
+                
+                <!-- Extracted Tasks Preview -->
+                <div x-show="extractedTasks.length > 0" class="border-t border-gray-200 pt-4">
+                    <h4 class="font-medium text-gray-900 mb-3">Extracted Tasks Preview</h4>
+                    <div class="space-y-3">
+                        <template x-for="(task, index) in extractedTasks" :key="index">
+                            <div class="p-4 border rounded-lg bg-gray-50">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <div class="font-medium" x-text="task.name"></div>
+                                        <div class="text-sm text-gray-600 mt-1" x-text="task.description?.substring(0, 150) + '...'"></div>
+                                        <div class="flex space-x-2 mt-2">
+                                            <span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded" x-text="task.task_type"></span>
+                                            <span class="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded" x-text="task.priority"></span>
+                                        </div>
+                                    </div>
+                                    <button @click="removeExtractedTask(index)" class="text-red-500 hover:text-red-700">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 mt-4">
+                        <button @click="closeExtractModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button @click="createExtractedTasks()" :disabled="isCreating" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                            Create All Tasks
                         </button>
                     </div>
-                    <p x-show="isRecording" class="text-sm text-red-500 mt-1">正在录音... 点击按钮停止</p>
-                    <p class="text-xs text-gray-500 mt-1">支持自然语言描述，AI 会自动解析任务类型、执行时间和配置</p>
                 </div>
-                
-                <!-- Or Import File -->
-                <div class="border-t border-gray-200 pt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">或导入配置文件</label>
-                    <input type="file" @change="importFile($event)" accept=".json,.yaml,.yml" 
-                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                </div>
-                
-                <!-- Parsed Result Preview -->
-                <div x-show="parsedTask" class="bg-gray-50 rounded-lg p-4 space-y-3">
-                    <h4 class="font-medium text-gray-900">解析结果预览</h4>
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <span class="text-gray-500">任务名称:</span>
-                            <span x-text="parsedTask?.name" class="ml-2 font-medium"></span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">任务类型:</span>
-                            <span x-text="parsedTask?.task_type" class="ml-2 font-medium"></span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">执行时间:</span>
-                            <span x-text="parsedTask?.cron_expression" class="ml-2 font-medium"></span>
-                        </div>
-                    </div>
-                    <div x-show="parsedTask?.description" class="text-sm">
-                        <span class="text-gray-500">描述:</span>
-                        <span x-text="parsedTask?.description" class="ml-2"></span>
-                    </div>
-                </div>
-                
-                <!-- Loading State -->
-                <div x-show="isParsing" class="flex items-center justify-center py-4">
-                    <svg class="animate-spin h-5 w-5 text-indigo-600 mr-2" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span class="text-gray-600">AI 正在解析任务配置...</span>
-                </div>
-            </div>
-            
-            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                <button @click="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">取消</button>
-                <button @click="parseTask()" x-show="!parsedTask" :disabled="!naturalLanguageInput.trim() || isParsing"
-                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    解析任务
-                </button>
-                <button @click="createTask()" x-show="parsedTask" :disabled="isCreating"
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    确认创建
-                </button>
             </div>
         </div>
     </div>
     
-    <!-- Edit Task Modal -->
-    <div x-show="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" x-cloak>
+    <!-- Create/Edit Task Modal -->
+    <div x-show="showCreateModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" x-cloak>
         <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4" @click.away="closeModal()">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold">编辑任务</h3>
+                <h3 class="text-lg font-semibold" x-text="editingId ? 'Edit Task' : 'Create Task'"></h3>
             </div>
             
             <div class="p-6 space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">任务名称</label>
+                    <label class="block text-sm font-medium text-gray-700">Task Name</label>
                     <input x-model="form.name" type="text" class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">描述</label>
-                    <textarea x-model="form.description" class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2" rows="2"></textarea>
+                    <label class="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea x-model="form.description" class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2" rows="3"></textarea>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">任务类型</label>
+                    <label class="block text-sm font-medium text-gray-700">Task Type</label>
                     <select x-model="form.task_type" class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
-                        <option value="http">HTTP 请求</option>
-                        <option value="shell">Shell 命令</option>
-                        <option value="python">Python 脚本</option>
-                        <option value="backup">文件备份</option>
+                        <option value="http">HTTP Request</option>
+                        <option value="shell">Shell Command</option>
+                        <option value="python">Python Script</option>
+                        <option value="backup">File Backup</option>
                     </select>
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Cron 表达式</label>
+                    <label class="block text-sm font-medium text-gray-700">Cron Expression</label>
                     <input x-model="form.cron_expression" type="text" placeholder="*/5 * * * *" class="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2">
-                    <p class="mt-1 text-xs text-gray-500">例如: */5 * * * * (每5分钟), 0 9 * * 1-5 (工作日9点)</p>
                 </div>
                 
                 <div class="flex items-center">
                     <input x-model="form.is_enabled" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                    <label class="ml-2 block text-sm text-gray-900">启用任务</label>
+                    <label class="ml-2 block text-sm text-gray-900">Enable Task</label>
                 </div>
             </div>
             
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-                <button @click="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">取消</button>
-                <button @click="saveTask()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">保存</button>
+                <button @click="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button @click="saveTask()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function tasksData() {
+function taskProcessingData() {
     return {
         tasks: [],
         filteredTasks: [],
         searchQuery: '',
         filterStatus: '',
+        
+        // Extract modal
+        showExtractModal: false,
+        unprocessedMessages: [],
+        selectedMessages: [],
+        extractedTasks: [],
+        isExtracting: false,
+        isCreating: false,
+        
+        // Create/Edit modal
         showCreateModal: false,
         showEditModal: false,
-        
-        // Natural language input
-        naturalLanguageInput: '',
-        isParsing: false,
-        isCreating: false,
-        parsedTask: null,
-        
-        // Voice input
-        isRecording: false,
-        recognition: null,
-        
+        editingId: null,
         form: {
             name: '',
             description: '',
-            task_type: 'http',
-            cron_expression: '',
+            task_type: 'shell',
+            cron_expression: '0 0 * * *',
             is_enabled: true,
             config: {}
         },
-        editingId: null,
         
         init() {
             this.fetchTasks();
-            this.initVoiceRecognition();
-        },
-        
-        initVoiceRecognition() {
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                this.recognition = new SpeechRecognition();
-                this.recognition.lang = 'zh-CN';
-                this.recognition.continuous = true;
-                this.recognition.interimResults = true;
-                
-                this.recognition.onresult = (event) => {
-                    let finalTranscript = '';
-                    let interimTranscript = '';
-                    
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript;
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-                    
-                    if (finalTranscript) {
-                        this.naturalLanguageInput += finalTranscript;
-                    }
-                };
-                
-                this.recognition.onerror = (event) => {
-                    console.error('语音识别错误:', event.error);
-                    this.isRecording = false;
-                };
-                
-                this.recognition.onend = () => {
-                    if (this.isRecording) {
-                        this.recognition.start();
-                    }
-                };
-            }
-        },
-        
-        toggleVoiceInput() {
-            if (!this.recognition) {
-                alert('您的浏览器不支持语音识别功能');
-                return;
-            }
-            
-            if (this.isRecording) {
-                this.isRecording = false;
-                this.recognition.stop();
-            } else {
-                this.isRecording = true;
-                this.naturalLanguageInput = '';
-                this.recognition.start();
-            }
-        },
-        
-        async parseTask() {
-            if (!this.naturalLanguageInput.trim()) return;
-            
-            this.isParsing = true;
-            this.parsedTask = null;
-            
-            try {
-                const response = await fetch('/api/ai/parse-task', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ description: this.naturalLanguageInput })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    this.parsedTask = data.task;
-                } else {
-                    alert('解析失败: ' + (data.error || '未知错误'));
-                }
-            } catch (error) {
-                console.error('Failed to parse task:', error);
-                alert('解析失败，请检查 AI 服务是否正常运行');
-            } finally {
-                this.isParsing = false;
-            }
-        },
-        
-        async importFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            try {
-                const text = await file.text();
-                const data = JSON.parse(text);
-                
-                this.parsedTask = {
-                    name: data.name || '导入的任务',
-                    description: data.description || '',
-                    task_type: data.task_type || 'shell',
-                    cron_expression: data.cron_expression || '0 0 * * *',
-                    config: data.config || {},
-                    is_enabled: true
-                };
-            } catch (error) {
-                alert('文件解析失败，请确保是有效的 JSON 格式');
-            }
-        },
-        
-        async createTask() {
-            if (!this.parsedTask) return;
-            
-            this.isCreating = true;
-            
-            try {
-                const response = await fetch('/api/tasks/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.parsedTask)
-                });
-                
-                if (response.ok) {
-                    this.closeModal();
-                    this.fetchTasks();
-                } else {
-                    const error = await response.json();
-                    alert('创建失败: ' + (error.detail || '未知错误'));
-                }
-            } catch (error) {
-                console.error('Failed to create task:', error);
-                alert('创建失败');
-            } finally {
-                this.isCreating = false;
-            }
+            this.fetchUnprocessedMessages();
         },
         
         async fetchTasks() {
@@ -394,6 +258,15 @@ function tasksData() {
                 this.filterTasks();
             } catch (error) {
                 console.error('Failed to fetch tasks:', error);
+            }
+        },
+        
+        async fetchUnprocessedMessages() {
+            try {
+                const response = await fetch('/api/messages/?is_processed=false');
+                this.unprocessedMessages = await response.json();
+            } catch (error) {
+                console.error('Failed to fetch messages:', error);
             }
         },
         
@@ -417,6 +290,84 @@ function tasksData() {
             this.filteredTasks = filtered;
         },
         
+        toggleMessageSelection(msgId) {
+            const index = this.selectedMessages.indexOf(msgId);
+            if (index > -1) {
+                this.selectedMessages.splice(index, 1);
+            } else {
+                this.selectedMessages.push(msgId);
+            }
+        },
+        
+        async extractTasks() {
+            if (this.selectedMessages.length === 0) return;
+            
+            this.isExtracting = true;
+            this.extractedTasks = [];
+            
+            try {
+                for (const msgId of this.selectedMessages) {
+                    const msg = this.unprocessedMessages.find(m => m.id === msgId);
+                    if (!msg) continue;
+                    
+                    const response = await fetch('/api/ai/extract-tasks-from-message', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: msg })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.tasks) {
+                        this.extractedTasks.push(...data.tasks);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to extract tasks:', error);
+                alert('Extraction failed. Please try again.');
+            } finally {
+                this.isExtracting = false;
+            }
+        },
+        
+        removeExtractedTask(index) {
+            this.extractedTasks.splice(index, 1);
+        },
+        
+        async createExtractedTasks() {
+            this.isCreating = true;
+            
+            try {
+                for (const task of this.extractedTasks) {
+                    await fetch('/api/tasks/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(task)
+                    });
+                }
+                
+                // Mark messages as processed
+                for (const msgId of this.selectedMessages) {
+                    await fetch(`/api/messages/${msgId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ is_processed: true })
+                    });
+                }
+                
+                this.closeExtractModal();
+                this.fetchTasks();
+                this.fetchUnprocessedMessages();
+                alert(`Created ${this.extractedTasks.length} tasks successfully!`);
+                
+            } catch (error) {
+                console.error('Failed to create tasks:', error);
+                alert('Failed to create some tasks.');
+            } finally {
+                this.isCreating = false;
+            }
+        },
+        
         async saveTask() {
             const url = this.editingId ? `/api/tasks/${this.editingId}` : '/api/tasks/';
             const method = this.editingId ? 'PUT' : 'POST';
@@ -432,7 +383,7 @@ function tasksData() {
                     this.closeModal();
                     this.fetchTasks();
                 } else {
-                    alert('保存失败');
+                    alert('Save failed');
                 }
             } catch (error) {
                 console.error('Failed to save task:', error);
@@ -442,7 +393,7 @@ function tasksData() {
         async runTask(id) {
             try {
                 await fetch(`/api/tasks/${id}/run`, { method: 'POST' });
-                alert('任务已开始执行');
+                alert('Task started');
             } catch (error) {
                 console.error('Failed to run task:', error);
             }
@@ -455,7 +406,7 @@ function tasksData() {
         },
         
         async deleteTask(id) {
-            if (!confirm('确定要删除这个任务吗？')) return;
+            if (!confirm('Delete this task?')) return;
             
             try {
                 await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
@@ -469,31 +420,25 @@ function tasksData() {
             this.showCreateModal = false;
             this.showEditModal = false;
             this.editingId = null;
-            this.naturalLanguageInput = '';
-            this.parsedTask = null;
-            this.isParsing = false;
-            this.isCreating = false;
-            
-            if (this.isRecording) {
-                this.isRecording = false;
-                if (this.recognition) {
-                    this.recognition.stop();
-                }
-            }
-            
             this.form = {
                 name: '',
                 description: '',
-                task_type: 'http',
-                cron_expression: '',
+                task_type: 'shell',
+                cron_expression: '0 0 * * *',
                 is_enabled: true,
                 config: {}
             };
         },
         
+        closeExtractModal() {
+            this.showExtractModal = false;
+            this.selectedMessages = [];
+            this.extractedTasks = [];
+        },
+        
         formatDate(dateStr) {
-            if (!dateStr) return '从未';
-            return new Date(dateStr).toLocaleString('zh-CN');
+            if (!dateStr) return 'Never';
+            return new Date(dateStr).toLocaleString();
         }
     }
 }
