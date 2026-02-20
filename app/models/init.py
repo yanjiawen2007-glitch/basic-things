@@ -96,7 +96,7 @@ class Message(Base):
 # Database setup
 def init_db(db_path="./data/scheduler.db"):
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
