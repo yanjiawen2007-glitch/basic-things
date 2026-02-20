@@ -60,10 +60,43 @@ class TaskLog(Base):
     # Trigger info
     trigger_type = Column(String(20), default="scheduled")  # scheduled, manual, api
 
+class Message(Base):
+    __tablename__ = "messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Message source
+    source = Column(String(50), nullable=False, default="email")  # email, manual, api
+    source_account = Column(String(200), nullable=True)  # e.g., hr@weilan.com
+    
+    # Message content
+    subject = Column(String(500), nullable=False)
+    sender = Column(String(200), nullable=True)
+    sender_name = Column(String(100), nullable=True)
+    organization = Column(String(200), nullable=True)  # 来源单位
+    contact_person = Column(String(100), nullable=True)  # 联系人
+    
+    # Full content
+    body = Column(Text, nullable=True)
+    
+    # Status
+    is_read = Column(Boolean, default=False)
+    is_processed = Column(Boolean, default=False)  # 是否已处理/创建任务
+    
+    # Related task
+    task_id = Column(Integer, nullable=True)
+    
+    # Original message ID for deduplication
+    message_id = Column(String(500), nullable=True, index=True)
+    
+    # Timestamps
+    received_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 # Database setup
 def init_db(db_path="./data/scheduler.db"):
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+    engine = create_engine(f"sqlite:///{db_path connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
