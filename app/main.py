@@ -20,7 +20,8 @@ SessionLocal = init_db("./data/scheduler.db")
 # Create services
 db_session = SessionLocal()
 scheduler_service = TaskSchedulerService(db_session)
-ai_service = AIService(model_name="llama3.2")
+# Auto-select best available model
+ai_service = AIService()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,6 +29,14 @@ async def lifespan(app: FastAPI):
     scheduler_service.start()
     tasks.set_scheduler_service(scheduler_service)
     ai_router.set_ai_service(ai_service)
+    
+    # Print selected model info
+    status = ai_service.get_status()
+    if status["available"]:
+        print(f"✅ AI 服务已启动，使用模型: {status['model']}")
+        print(f"📋 可用模型: {', '.join(status['available_models'])}")
+    else:
+        print("⚠️  AI 服务未启动，将使用规则模式")
     
     # Load existing tasks
     from app.models import Task
