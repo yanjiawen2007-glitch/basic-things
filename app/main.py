@@ -60,6 +60,11 @@ async def dashboard(request: Request):
     """Main dashboard page"""
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
+@app.get("/index", response_class=HTMLResponse)
+async def index_page(request: Request):
+    """Navigation index page"""
+    return templates.TemplateResponse("index.html", {"request": request})
+
 @app.get("/tasks", response_class=HTMLResponse)
 async def tasks_page(request: Request):
     """Tasks management page"""
