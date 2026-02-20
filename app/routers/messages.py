@@ -72,7 +72,7 @@ def delete_message(message_id: int, db: Session = Depends(get_db)):
 
 @router.post("/import-emails")
 def import_emails(db: Session = Depends(get_db)):
-    """Import emails from configured email accounts"""
+    """Import all emails that haven't been imported yet"""
     import os
     import imaplib
     import email
@@ -84,7 +84,6 @@ def import_emails(db: Session = Depends(get_db)):
     EMAIL_PASS = os.getenv('EMAIL_PASS', '')
     
     if not EMAIL_PASS:
-        # Try to get from code
         EMAIL_PASS = '9wpCjNNcMvj845Fv'
     
     def decode_str(s):
@@ -102,15 +101,22 @@ def import_emails(db: Session = Depends(get_db)):
         mail.login(EMAIL_USER, EMAIL_PASS)
         mail.select('inbox')
         
-        status, messages = mail.search(None, 'UNSEEN')
+        # Search ALL emails (not just UNSEEN)
+        status, messages = mail.search(None, 'ALL')
         
         if status != 'OK':
-            return {"imported": 0, "message": "No new emails"}
+            return {"imported": 0, "message": "No emails found"}
         
         email_ids = messages[0].split()
-        imported = 0
         
-        for email_id in email_ids:
+        # Get already imported message_ids from database
+        existing_ids = {m[0] for m in db.query(Message.message_id).filter(Message.message_id != None).all()}
+        
+        imported = 0
+        skipped = 0
+        
+        # Process last 100 emails to avoid timeout
+        for email_id in email_ids[-100:]:
             status, msg_data = mail.fetch(email_id, '(RFC822)')
             if status != 'OK':
                 continue
@@ -118,12 +124,11 @@ def import_emails(db: Session = Depends(get_db)):
             raw_email = msg_data[0][1]
             msg = email.message_from_bytes(raw_email)
             
-            # Get message ID for deduplication
             msg_id = msg.get('Message-ID', '') or msg.get('Message-Id', '')
             
-            # Check if already imported
-            existing = db.query(Message).filter(Message.message_id == msg_id).first()
-            if existing:
+            # Skip if already imported
+            if msg_id in existing_ids:
+                skipped += 1
                 continue
             
             # Parse subject
@@ -161,7 +166,6 @@ def import_emails(db: Session = Depends(get_db)):
                     else:
                         sender += part
             
-            # Extract sender name and email
             if '<' in sender and '>' in sender:
                 sender_name = sender.split('<')[0].strip()
                 sender_email = sender.split('<')[1].split('>')[0].strip()
@@ -169,17 +173,14 @@ def import_emails(db: Session = Depends(get_db)):
                 sender_email = sender
                 sender_name = ""
             
-            # Extract organization from sender email domain or name
             organization = ""
             if '@' in sender_email:
                 domain = sender_email.split('@')[1]
                 if '.' in domain:
                     organization = domain.split('.')[0]
             
-            # Extract contact person
             contact_person = sender_name if sender_name else ""
             
-            # Create message
             db_message = Message(
                 source="email",
                 source_account=EMAIL_USER,
@@ -200,7 +201,11 @@ def import_emails(db: Session = Depends(get_db)):
         mail.close()
         mail.logout()
         
-        return {"imported": imported, "message": f"Imported {imported} emails"}
+        return {
+            "imported": imported,
+            "skipped": skipped,
+            "message": f"Imported {imported} new emails, skipped {skipped} already imported"
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
