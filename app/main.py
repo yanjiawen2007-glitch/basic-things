@@ -8,18 +8,19 @@ from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 import os
 
-from app.models import init_db, get_db as get_db_session, SessionLocal
+# 先导入并初始化数据库
+from app.models import init_db
+init_db()
+
+# 初始化后再导入 SessionLocal（此时已正确设置）
+from app.models import SessionLocal, get_db as get_db_session
 from app.routers import tasks_router, ai_router, messages_router
 from app.services.scheduler import TaskSchedulerService
 from app.services.ai_service import AIService
 
-# Initialize database - init_db() 设置全局 SessionLocal
-init_db()
-
-# Create services
+# 现在 SessionLocal 是可用的
 db_session = SessionLocal()
 scheduler_service = TaskSchedulerService(db_session)
-# Auto-select best available model
 ai_service = AIService()
 
 @asynccontextmanager
