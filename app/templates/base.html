@@ -44,32 +44,32 @@
         <nav class="mt-8 px-4 space-y-2">
             <a href="/" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors {% if request.url.path == '/' %}bg-slate-800 border-l-4 border-indigo-500{% endif %}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                <span>仪表盘</span>
+                <span>Dashboard</span>
             </a>
             <a href="/messages" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors {% if request.url.path == '/messages' %}bg-slate-800 border-l-4 border-indigo-500{% endif %}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                <span>信息列表</span>
+                <span>Messages</span>
                 <span class="ml-auto px-2 py-0.5 bg-blue-500 rounded text-xs">NEW</span>
             </a>
             <a href="/tasks" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors {% if request.url.path == '/tasks' %}bg-slate-800 border-l-4 border-indigo-500{% endif %}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                <span>任务管理</span>
+                <span>Task Processing</span>
             </a>
             <a href="/logs" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors {% if request.url.path == '/logs' %}bg-slate-800 border-l-4 border-indigo-500{% endif %}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <span>执行日志</span>
+                <span>Logs</span>
             </a>
             <a href="/ai" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors {% if request.url.path == '/ai' %}bg-slate-800 border-l-4 border-indigo-500{% endif %}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span>AI 助手</span>
+                <span>AI Assistant</span>
                 <span class="ml-auto px-2 py-0.5 bg-purple-500 rounded text-xs">NEW</span>
             </a>
         </nav>
         
         <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
             <div class="flex items-center space-x-3 text-sm text-slate-400">
-                <div class="w-2 h-2 bg-green-500 rounded-full pulse-dot"></div>
-                <span>调度器运行中</span>
+                <div class="w--2 bg-green-500 rounded-full pulse-dot"></div>
+                <span>Scheduler Running</span>
             </div>
         </div>
     </div>
