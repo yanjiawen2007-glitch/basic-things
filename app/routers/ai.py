@@ -2,7 +2,7 @@
 AI Router - AI-powered API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from app.services.ai_service import AIService
 
@@ -152,3 +152,103 @@ async def parse_task(request: Dict[str, str]):
         "cron_description": cron_result.get("description", ""),
         "source": "llm" if ai_service.ollama_available else "rule"
     }
+
+@router.post("/extract-tasks-from-message")
+async def extract_tasks_from_message(request: Dict[str, Any]):
+    """Extract actionable tasks from a message using AI"""
+    message = request.get("message", {})
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+    
+    subject = message.get("subject", "")
+    body = message.get("body", "")
+    sender = message.get("sender", "")
+    organization = message.get("organization", "")
+    
+    # Combine message content for analysis
+    full_content = f"""
+Subject: {subject}
+From: {sender}
+Organization: {organization}
+
+Content:
+{body}
+"""
+    
+    if not ai_service.ollama_available:
+        # Fallback: create a single generic task
+        return {
+            "success": True,
+            "tasks": [{
+                "name": f"Process: {subject[:50]}",
+                "description": f"From {sender} at {organization}\n\n{body[:500]}",
+                "task_type": "shell",
+                "cron_expression": "0 9 * * *",
+                "config": {"command": f"echo 'Process: {subject}'", "timeout": 300},
+                "priority": "medium",
+                "source_message_id": message.get("id")
+            }],
+            "source": "rule"
+        }
+    
+    # Use AI to extract tasks
+    prompt = f"""Analyze the following message and extract actionable tasks.
+
+Message:
+{full_content}
+
+Extract tasks and return as JSON array:
+[
+    {{
+        "name": "Brief task name",
+        "description": "Detailed description including context from the message",
+        "task_type": "shell|http|python|backup",
+        "priority": "high|medium|low",
+        "cron_expression": "cron expression if scheduled, otherwise 0 0 * * *",
+        "config": {{
+            "command": "shell command or instructions"
+        }}
+    }}
+]
+
+If no actionable tasks found, return empty array []."""
+
+    try:
+        import json
+        import re
+        
+        response = ai_service._call_llm(prompt)
+        
+        # Extract JSON from response
+        json_match = re.search(r'\[.*\]', response, re.DOTALL)
+        if json_match:
+            tasks = json.loads(json_match.group())
+        else:
+            tasks = []
+        
+        # Add source message ID to each task
+        for task in tasks:
+            task["source_message_id"] = message.get("id")
+        
+        return {
+            "success": True,
+            "tasks": tasks,
+            "source": "llm"
+        }
+        
+    except Exception as e:
+        # Fallback on error
+        return {
+            "success": True,
+            "tasks": [{
+                "name": f"Review: {subject[:50]}",
+                "description": f"From {sender}\n\n{body[:500]}",
+                "task_type": "shell",
+                "cron_expression": "0 9 * * *",
+                "config": {"command": f"echo 'Review message: {subject}'", "timeout": 300},
+                "priority": "medium",
+                "source_message_id": message.get("id")
+            }],
+            "source": "rule",
+            "error": str(e)
+        }
