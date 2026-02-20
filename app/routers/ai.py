@@ -104,13 +104,45 @@ async def parse_task(request: Dict[str, str]):
     # Generate task name
     task_name = ai_service.generate_task_name(description)
     
+    # Determine task type
+    task_type = suggestion.get("task_type", "shell")
+    
+    # Build default config based on task type
+    default_configs = {
+        "http": {
+            "url": "https://example.com",
+            "method": "GET",
+            "timeout": 30
+        },
+        "shell": {
+            "command": "echo 'Task executed'",
+            "timeout": 300
+        },
+        "python": {
+            "code": "print('Hello World')",
+            "timeout": 300
+        },
+        "backup": {
+            "source_path": "/data",
+            "destination_path": "/backup",
+            "compress": True,
+            "retention_days": 7
+        }
+    }
+    
+    # Merge AI suggestion config with default config
+    config = default_configs.get(task_type, {}).copy()
+    suggested_config = suggestion.get("config", {})
+    if suggested_config:
+        config.update(suggested_config)
+    
     # Build complete task configuration
     task_config = {
         "name": suggestion.get("task_name", task_name),
         "description": description,
-        "task_type": suggestion.get("task_type", "shell"),
+        "task_type": task_type,
         "cron_expression": cron_result.get("cron", "0 0 * * *"),
-        "config": suggestion.get("config", {}),
+        "config": config,
         "is_enabled": True
     }
     
