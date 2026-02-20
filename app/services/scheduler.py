@@ -98,6 +98,7 @@ class TaskSchedulerService:
             return
         
         self._running_tasks.add(task_id)
+        task = None
         
         try:
             # Get task from database
@@ -196,3 +197,42 @@ class TaskSchedulerService:
             result = await self.executor.execute(
                 task.id,
                 task.name,
+                TaskType(task.task_type),
+                task.config
+            )
+            
+            log.status = result["status"]
+            log.completed_at = result["completed_at"]
+            log.duration_ms = result["duration_ms"]
+            log.output = result["output"]
+            log.error_message = result["error_message"]
+            log.exit_code = result["exit_code"]
+            
+            if result["status"] == "success":
+                task.success_count += 1
+            else:
+                task.failure_count += 1
+            
+            task.is_running = False
+            self.db.commit()
+            
+            return log
+            
+        finally:
+            self._running_tasks.discard(task_id)
+    
+    async def _send_notification(self, task: Task, result: dict):
+        """Send notification (placeholder implementation)"""
+        # TODO: Implement email/webhook notification
+        logger.info(f"Would send notification for task {task.id} to {task.notification_email}")
+    
+    def get_scheduler_jobs(self) -> List[dict]:
+        """Get all scheduled jobs"""
+        jobs = []
+        for job in self.scheduler.get_jobs():
+            jobs.append({
+                "id": job.id,
+                "next_run_time": job.next_run_time,
+                "trigger": str(job.trigger)
+            })
+        return jobs
