@@ -15,3 +15,4 @@ croniter==1.0.15
 pytest==7.4.3
 pytest-asyncio==0.21.1
 httpx==0.25.2
+ollama==0.4.7
