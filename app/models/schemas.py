@@ -45,7 +45,7 @@ class BackupConfig(BaseModel):
 
 class TaskBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(default=None, max_length=500)
+    description: Optional[str] = Field(default=None, max_length=2000)
     task_type: TaskType
     cron_expression: str = Field(..., description="Cron expression (e.g., '0 9 * * *')")
     config: Dict[str, Any]
@@ -59,7 +59,7 @@ class TaskCreate(TaskBase):
 
 class TaskUpdate(BaseModel):
     name: Optional[str] = Field(default=None, max_length=100)
-    description: Optional[str] = Field(default=None, max_length=500)
+    description: Optional[str] = Field(default=None, max_length=2000)
     cron_expression: Optional[str] = Field(default=None)
     config: Optional[Dict[str, Any]] = Field(default=None)
     is_active: Optional[bool] = Field(default=None)
