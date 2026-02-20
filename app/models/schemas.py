@@ -99,6 +99,37 @@ class TaskLogResponse(TaskLogBase):
     class Config:
         from_attributes = True
 
+# Message schemas
+class MessageBase(BaseModel):
+    source: str = "email"
+    source_account: Optional[str] = None
+    subject: str
+    sender: Optional[str] = None
+    sender_name: Optional[str] = None
+    organization: Optional[str] = None
+    contact_person: Optional[str] = None
+    body: Optional[str] = None
+    is_read: bool = False
+    is_processed: bool = False
+    task_id: Optional[int] = None
+
+class MessageCreate(MessageBase):
+    message_id: Optional[str] = None
+
+class MessageUpdate(BaseModel):
+    is_read: Optional[bool] = None
+    is_processed: Optional[bool] = None
+    task_id: Optional[int] = None
+
+class MessageResponse(MessageBase):
+    id: int
+    message_id: Optional[str]
+    received_at: datetime
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 class DashboardStats(BaseModel):
     total_tasks: int
     active_tasks: int
