@@ -10,20 +10,24 @@ import os
 
 from app.models import init_db, get_db as get_db_session
 from app.routers import tasks
+from app.routers import ai as ai_router
 from app.services.scheduler import TaskSchedulerService
+from app.services.ai_service import AIService
 
 # Initialize database
 SessionLocal = init_db("./data/scheduler.db")
 
-# Create scheduler service
+# Create services
 db_session = SessionLocal()
 scheduler_service = TaskSchedulerService(db_session)
+ai_service = AIService(model_name="llama3.2")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     scheduler_service.start()
     tasks.set_scheduler_service(scheduler_service)
+    ai_router.set_ai_service(ai_service)
     
     # Load existing tasks
     from app.models import Task
@@ -41,8 +45,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Task Scheduler",
-    description="A modern task scheduling and automation platform",
-    version="1.0.0",
+    description="A modern task scheduling and automation platform with AI",
+    version="1.1.0",
     lifespan=lifespan
 )
 
@@ -54,6 +58,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 # Include routers
 app.include_router(tasks.router)
+app.include_router(ai_router.router)
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
@@ -75,13 +80,19 @@ async def logs_page(request: Request):
     """Logs viewer page"""
     return templates.TemplateResponse("logs.html", {"request": request})
 
+@app.get("/ai", response_class=HTMLResponse)
+async def ai_page(request: Request):
+    """AI assistant page"""
+    return templates.TemplateResponse("ai.html", {"request": request})
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
         "scheduler_running": scheduler_service.scheduler.running,
-        "scheduled_jobs": len(scheduler_service.get_scheduler_jobs())
+        "scheduled_jobs": len(scheduler_service.get_scheduler_jobs()),
+        "ai_available": ai_service.get_status()["ollama_running"]
     }
 
 if __name__ == "__main__":
