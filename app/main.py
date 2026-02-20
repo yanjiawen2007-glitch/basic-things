@@ -8,13 +8,13 @@ from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 import os
 
-from app.models import init_db, get_db as get_db_session
+from app.models import init_db, get_db as get_db_session, SessionLocal
 from app.routers import tasks_router, ai_router, messages_router
 from app.services.scheduler import TaskSchedulerService
 from app.services.ai_service import AIService
 
-# Initialize database
-SessionLocal = init_db()
+# Initialize database - init_db() 设置全局 SessionLocal
+init_db()
 
 # Create services
 db_session = SessionLocal()
