@@ -9,13 +9,12 @@ from contextlib import asynccontextmanager
 import os
 
 from app.models import init_db, get_db as get_db_session
-from app.routers import tasks
-from app.routers import ai as ai_router
+from app.routers import tasks_router, ai_router, messages_router
 from app.services.scheduler import TaskSchedulerService
 from app.services.ai_service import AIService
 
 # Initialize database
-SessionLocal = init_db("./data/scheduler.db")
+SessionLocal = init_db()
 
 # Create services
 db_session = SessionLocal()
@@ -27,7 +26,7 @@ ai_service = AIService()
 async def lifespan(app: FastAPI):
     # Startup
     scheduler_service.start()
-    tasks.set_scheduler_service(scheduler_service)
+    tasks_router.set_scheduler_service(scheduler_service)
     ai_router.set_ai_service(ai_service)
     
     # Print selected model info
@@ -66,8 +65,9 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 # Include routers
-app.include_router(tasks.router)
-app.include_router(ai_router.router)
+app.include_router(tasks_router)
+app.include_router(ai_router)
+app.include_router(messages_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
@@ -93,6 +93,11 @@ async def logs_page(request: Request):
 async def ai_page(request: Request):
     """AI assistant page"""
     return templates.TemplateResponse("ai.html", {"request": request})
+
+@app.get("/messages", response_class=HTMLResponse)
+async def messages_page(request: Request):
+    """Messages list page"""
+    return templates.TemplateResponse("messages.html", {"request": request})
 
 @app.get("/api/health")
 async def health_check():
