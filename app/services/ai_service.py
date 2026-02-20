@@ -9,33 +9,72 @@ import json
 class AIService:
     """AI-powered features using local Ollama models"""
     
-    def __init__(self, model_name: str = "llama3.2"):
+    # Priority list of preferred models (in order of preference)
+    PREFERRED_MODELS = [
+        "qwen2.5:14b",
+        "qwen2.5:7b",
+        "qwen:14b",
+        "qwen:7b",
+        "llama3.2",
+        "llama3.1",
+        "llama3",
+        "mistral",
+        "gemma2:9b",
+        "gemma:7b",
+        "phi3:medium",
+        "phi3",
+    ]
+    
+    def __init__(self, model_name: str = None):
         self.model = model_name
-        self.common_patterns = {
-            "每小时": "0 * * * *",
-            "每天": "0 0 * * *",
-            "每天早上9点": "0 9 * * *",
-            "每天早上8点": "0 8 * * *",
-            "每天晚上6点": "0 18 * * *",
-            "每天晚上8点": "0 20 * * *",
-            "每周一": "0 0 * * 1",
-            "每周日": "0 0 * * 0",
-            "每月1号": "0 0 1 * *",
-            "每5分钟": "*/5 * * * *",
-            "每10分钟": "*/10 * * * *",
-            "每30分钟": "*/30 * * * *",
-        }
+        self.ollama_available = False
+        self.available_models = []
         self._check_ollama()
+        
+        if not self.model and self.ollama_available:
+            self.model = self._select_best_model()
     
     def _check_ollama(self):
-        """Check if Ollama is running"""
+        """Check if Ollama is running and get available models"""
         try:
             import ollama
-            ollama.list()
+            models_info = ollama.list()
             self.ollama_available = True
-        except:
+            
+            # Extract model names from ollama list response
+            if 'models' in models_info:
+                self.available_models = [
+                    m.get('name', m.get('model', '')).split(':')[0] if ':' in m.get('name', m.get('model', '')) else m.get('name', m.get('model', ''))
+                    for m in models_info['models']
+                ]
+            else:
+                # Handle different response formats
+                self.available_models = [m for m in models_info if isinstance(m, str)]
+                
+        except Exception as e:
             self.ollama_available = False
-            print("⚠️  Ollama 未运行，将使用规则引擎模式")
+            self.available_models = []
+            print(f"⚠️  Ollama 未运行或无法连接: {e}")
+    
+    def _select_best_model(self) -> str:
+        """Select the best available model from preferred list"""
+        if not self.available_models:
+            return "llama3.2"  # fallback default
+        
+        # Check for exact matches first
+        for preferred in self.PREFERRED_MODELS:
+            if preferred in self.available_models:
+                return preferred
+        
+        # Check for partial matches (e.g., "qwen2.5" matches "qwen2.5:14b")
+        for preferred in self.PREFERRED_MODELS:
+            base_name = preferred.split(':')[0]
+            for available in self.available_models:
+                if base_name in available or available in preferred:
+                    return available
+        
+        # Return first available model if no preferred match
+        return self.available_models[0] if self.available_models else "llama3.2"
     
     def _call_llm(self, prompt: str, system_prompt: str = "") -> str:
         """Call local Ollama model"""
@@ -62,7 +101,22 @@ class AIService:
         text = text.strip()
         
         # 先尝试规则匹配（快速）
-        for pattern, cron in self.common_patterns.items():
+        common_patterns = {
+            "每小时": "0 * * * *",
+            "每天": "0 0 * * *",
+            "每天早上9点": "0 9 * * *",
+            "每天早上8点": "0 8 * * *",
+            "每天晚上6点": "0 18 * * *",
+            "每天晚上8点": "0 20 * * *",
+            "每周一": "0 0 * * 1",
+            "每周日": "0 0 * * 0",
+            "每月1号": "0 0 1 * *",
+            "每5分钟": "*/5 * * * *",
+            "每10分钟": "*/10 * * * *",
+            "每30分钟": "*/30 * * * *",
+        }
+        
+        for pattern, cron in common_patterns.items():
             if pattern in text:
                 return {
                     "success": True,
@@ -124,7 +178,7 @@ class AIService:
         return {
             "success": False,
             "error": "无法解析该描述，请尝试: 每天、每小时、每周一、每5分钟等",
-            "suggestions": list(self.common_patterns.keys())[:5]
+            "suggestions": list(common_patterns.keys())[:5]
         }
     
     def _parse_complex_description(self, text: str) -> Optional[Dict[str, Any]]:
@@ -372,10 +426,44 @@ class AIService:
             "action": None
         }
     
+    def generate_task_name(self, description: str) -> str:
+        """Generate a concise task name from description"""
+        if self.ollama_available:
+            prompt = f"""根据以下描述生成一个简短的任务名称（2-6个字）：
+
+描述: {description}
+
+只返回任务名称，不要其他内容。"""
+            
+            try:
+                result = self._call_llm(prompt)
+                name = result.strip().strip('"').strip("'")
+                if name and len(name) <= 20:
+                    return name
+            except:
+                pass
+        
+        # 回退到规则生成
+        name = description[:10] if len(description) <= 10 else description[:10] + "..."
+        return name
+    
     def get_status(self) -> Dict[str, Any]:
         """Get AI service status"""
         return {
+            "available": self.ollama_available,
             "ollama_running": self.ollama_available,
             "model": self.model if self.ollama_available else None,
+            "available_models": self.available_models,
             "mode": "llm" if self.ollama_available else "rule_only"
         }
+    
+    def get_available_models(self) -> List[str]:
+        """Get list of available local models"""
+        return self.available_models
+    
+    def set_model(self, model_name: str) -> bool:
+        """Change the active model"""
+        if model_name in self.available_models:
+            self.model = model_name
+            return True
+        return False
