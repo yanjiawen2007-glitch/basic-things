@@ -1,11 +1,11 @@
-"""
-Database models for Task Scheduler
-"""
+```python
+""" Database models for Task Scheduler """
+
 import os
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Boolean, JSON
+from datetime import datetime, timezone
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Boolean, JSON, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
 
 Base = declarative_base()
 
@@ -16,7 +16,7 @@ SessionLocal = None
 
 class Task(Base):
     __tablename__ = "tasks"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, index=True)
     description = Column(Text, nullable=True)
@@ -24,7 +24,7 @@ class Task(Base):
     cron_expression = Column(String(100), nullable=False)
     
     # Task configuration stored as JSON
-    config = Column(JSON, default=dict)
+    config = Column(JSON, default=lambda: dict)
     
     # Status
     is_active = Column(Boolean, default=True)
@@ -38,8 +38,8 @@ class Task(Base):
     notification_email = Column(String(200), nullable=True)
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     run_count = Column(Integer, default=0)
     success_count = Column(Integer, default=0)
     failure_count = Column(Integer, default=0)
@@ -47,14 +47,14 @@ class Task(Base):
 
 class TaskLog(Base):
     __tablename__ = "task_logs"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    task_id = Column(Integer, nullable=False, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
     task_name = Column(String(100), nullable=False)
     
     # Execution details
     status = Column(String(20), nullable=False)  # running, success, failed
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at = Column(DateTime, nullable=True)
     duration_ms = Column(Integer, nullable=True)
     
@@ -69,7 +69,7 @@ class TaskLog(Base):
 
 class Message(Base):
     __tablename__ = "messages"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     
     # Message source
@@ -91,14 +91,14 @@ class Message(Base):
     is_processed = Column(Boolean, default=False)  # 是否已处理/创建任务
     
     # Related task
-    task_id = Column(Integer, nullable=True)
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)
     
     # Original message ID for deduplication
     message_id = Column(String(500), nullable=True, index=True)
     
     # Timestamps
-    received_at = Column(DateTime, default=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    received_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 def init_db(db_path="./data/scheduler.db"):
@@ -109,11 +109,12 @@ def init_db(db_path="./data/scheduler.db"):
     global engine, SessionLocal
     
     # 确保数据目录存在
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    db_dir = os.path.dirname(db_path) or "."
+    os.makedirs(db_dir, exist_ok=True)
     
     # 创建引擎
     engine = create_engine(
-        f"sqlite:///{db_path}", 
+        f"sqlite:///{db_path}",
         connect_args={"check_same_thread": False}
     )
     
@@ -122,8 +123,6 @@ def init_db(db_path="./data/scheduler.db"):
     
     # 创建会话工厂
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
-    # 不返回任何值，SessionLocal 已通过全局变量设置
 
 
 def get_db():
@@ -149,6 +148,16 @@ __all__ = [
     'Message',
     'init_db',
     'get_db',
-    'engine',
-    'SessionLocal'
 ]
+```
+
+---
+
+## 修复清单
+
+✅ **datetime.utcnow() → datetime.now(timezone.utc)**  
+✅ **JSON 默认值改为 lambda 函数**  
+✅ **路径处理健壮性改进**  
+✅ **添加外键约束**  
+✅ **优化 __all__ 导出，移除未初始化的全局变量**  
+✅ **导入 ForeignKey**
