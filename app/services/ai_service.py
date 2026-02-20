@@ -1,6 +1,11 @@
 """
 AI Service - Local LLM powered features using Ollama
 """
+import os
+os.environ['NO_PROXY'] = 'localhost,127.0.0.1'
+os.environ['HTTP_PROXY'] = ''
+os.environ['HTTPS_PROXY'] = ''
+
 import re
 from datetime import datetime
 from typing import Dict, Any, Optional, List
