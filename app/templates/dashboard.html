@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}仪表盘 - TaskFlow{% endblock %}
+{% block page_title %}仪表盘{% endblock %}
+
+{% block content %}
+<div x-data="dashboardData()" x-init="init()" class="space-y-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6 card-hover border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">总任务数</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2" x-text="stats.total_tasks">0</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-green-600 font-medium" x-text="stats.active_tasks + ' 活跃'">0 活跃</span>
+                <span class="text-gray-400 mx-2">|</span>
+                <span class="text-orange-600 font-medium" x-text="stats.running_tasks + ' 运行中'">0 运行中</span>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6 card-hover border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">总执行次数</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2" x-text="stats.total_runs">0</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500">成功率</span>
+                    <span class="font-bold text-green-600" x-text="stats.success_rate + '%'">0%</span>
+                </div>
+                <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-green-500 h-2 rounded-full transition-all duration-500" :style="'width: ' + stats.success_rate + '%'"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6 card-hover border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">系统状态</p>
+                    <p class="text-3xl font-bold text-green-600 mt-2">健康</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+            <div class="mt-4 text-sm text-gray-500">
+                <span>调度器正常运行</span>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-sm p-6 text-white card-hover">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-indigo-100">快速操作</p>
+                    <p class="text-lg font-bold mt-2">新建任务</p>
+                </div>
+                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </div>
+            </div>
+            <a href="/tasks" class="mt-4 block text-center py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors text-sm font-medium">
+                立即创建 →
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Logs -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800">最近执行记录</h3>
+                <a href="/logs" class="text-sm text-indigo-600 hover:text-indigo-800">查看全部 →</a>
+            </div>
+            <div class="divide-y divide-gray-100">
+                <template x-for="log in stats.recent_logs" :key="log.id">
+                    <div class="px-6 py-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span :class="{
+                                    'bg-green-100 text-green-800': log.status === 'success',
+                                    'bg-red-100 text-red-800': log.status === 'failed',
+                                    'bg-yellow-100 text-yellow-800': log.status === 'running'
+                                }" class="px-2 py-1 rounded-full text-xs font-medium" x-text="log.status"></span>
+                                <span class="font-medium text-gray-900" x-text="log.task_name"></span>
+                            </div>
+                            <span class="text-sm text-gray-500" x-text="formatTime(log.started_at)"></span>
+                        </div>
+                        <div class="mt-2 text-sm text-gray-600" x-show="log.duration_ms">
+                            耗时: <span x-text="log.duration_ms + 'ms'"></span>
+                            <span x-show="log.exit_code !== null" class="ml-3">退出码: <span x-text="log.exit_code"></span></span>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="stats.recent_logs.length === 0" class="px-6 py-8 text-center text-gray-500">
+                    暂无执行记录
+                </div>
+            </div>
+        </div>
+        
+        <!-- Upcoming Tasks -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800">即将执行</h3>
+            </div>
+            <div class="divide-y divide-gray-100">
+                <template x-for="task in stats.upcoming_tasks" :key="task.id">
+                    <div class="px-6 py-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="font-medium text-gray-900" x-text="task.name"></span>
+                                <p class="text-sm text-gray-500 mt-1" x-text="task.cron_expression"></p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-medium text-indigo-600" x-text="formatTime(task.next_run_at)"></span>
+                                <p class="text-xs text-gray-400 mt-1" x-text="task.task_type"></p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="stats.upcoming_tasks.length === 0" class="px-6 py-8 text-center text-gray-500">
+                    暂无即将执行的任务
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function dashboardData() {
+    return {
+        stats: {
+            total_tasks: 0,
+            active_tasks: 0,
+            running_tasks: 0,
+            total_runs: 0,
+            success_rate: 0,
+            recent_logs: [],
+            upcoming_tasks: []
+        },
+        
+        async init() {
+            await this.fetchStats();
+            // Auto refresh every 30 seconds
+            setInterval(() => this.fetchStats(), 30000);
+        },
+        
+        async fetchStats() {
+            try {
+                const response = await fetch('/api/tasks/stats/dashboard');
+                if (response.ok) {
+                    this.stats = await response.json();
+                }
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            }
+        },
+        
+        formatTime(isoString) {
+            if (!isoString) return '-';
+            const date = new Date(isoString);
+            return date.toLocaleString('zh-CN', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    }
+}
+</script>
+{% endblock %}
